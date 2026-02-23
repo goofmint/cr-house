@@ -1,0 +1,27 @@
+{
+  "name": "cr-house",
+  "version": "0.1.0",
+  "description": "CLI tool to generate CodeRabbit configuration",
+  "type": "module",
+  "bin": {
+    "cr-house": "./bin/cr-house.js"
+  },
+  "main": "./dist/cli.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && node bin/cr-house.js",
+    "prepublishOnly": "npm run build"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^14.0.3",
+    "glob": "^13.0.6",
+    "inquirer": "^13.3.0",
+    "linguist-js": "^2.9.2",
+    "yaml": "^2.8.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "typescript": "^5.9.3"
+  }
+}
