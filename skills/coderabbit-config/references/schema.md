@@ -25,6 +25,7 @@ Source: https://www.coderabbit.ai/integrations/schema.v2.json
 | `tone_instructions` | string (max 250 chars) | — | Custom tone guidance |
 | `early_access` | boolean | `false` | Enable experimental features |
 | `enable_free_tier` | boolean | `true` | Allow free-tier functionality |
+| `inheritance` | boolean | `false` | Enable inheritance from parent configuration |
 
 ---
 
@@ -56,6 +57,9 @@ Source: https://www.coderabbit.ai/integrations/schema.v2.json
 | `suggested_reviewers` | boolean | `true` | Suggest reviewers |
 | `auto_assign_reviewers` | boolean | `false` | Automatically assign suggested reviewers |
 | `path_filters` | string[] | `[]` | Glob patterns; prefix `!` to exclude. Evaluated in order. |
+| `fail_commit_status` | boolean | `false` | Set commit status to failure when review finds issues |
+| `enable_prompt_for_ai_agents` | boolean | `true` | Include prompt for AI agents in review comments |
+| `high_level_summary_placeholder` | string | `"@coderabbitai summary"` | Placeholder string where the high-level summary will be inserted |
 
 ---
 
