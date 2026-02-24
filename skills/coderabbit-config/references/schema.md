@@ -1,0 +1,173 @@
+# CodeRabbit Schema v2 Reference
+
+Source: https://www.coderabbit.ai/integrations/schema.v2.json
+
+## Table of Contents
+1. [Top-Level Fields](#top-level-fields)
+2. [reviews](#reviews)
+3. [reviews.auto_review](#reviewsauto_review)
+4. [reviews.path_instructions](#reviewspath_instructions)
+5. [reviews.tools](#reviewstools)
+6. [reviews.finishing_touches](#reviewsfinishing_touches)
+7. [reviews.pre_merge_checks](#reviewspre_merge_checks)
+8. [chat](#chat)
+9. [knowledge_base](#knowledge_base)
+10. [code_generation](#code_generation)
+11. [issue_enrichment](#issue_enrichment)
+
+---
+
+## Top-Level Fields
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `language` | string (ISO code) | `en-US` | Language for review comments. 90+ locales. |
+| `tone_instructions` | string (max 250 chars) | — | Custom tone guidance |
+| `early_access` | boolean | `false` | Enable experimental features |
+| `enable_free_tier` | boolean | `true` | Allow free-tier functionality |
+
+---
+
+## reviews
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `profile` | `"chill"` \| `"assertive"` | `"chill"` | `chill` = constructive; `assertive` = strict |
+| `request_changes_workflow` | boolean | `false` | Auto-approve when all comments resolved |
+| `abort_on_close` | boolean | `true` | Stop review if PR closes |
+| `high_level_summary` | boolean | `true` | Generate change summary |
+| `high_level_summary_instructions` | string | — | Customize how the high-level summary is generated |
+| `high_level_summary_in_walkthrough` | boolean | `false` | Place summary in walkthrough section |
+| `auto_title_instructions` | string | — | Customize how PR titles are auto-generated |
+| `review_status` | boolean | `true` | Post review status messages in walkthrough |
+| `review_details` | boolean | `false` | Post review details (ignored files, extra context, etc.) |
+| `commit_status` | boolean | `true` | Set commit status to pending/success during review |
+| `collapse_walkthrough` | boolean | `true` | Wrap walkthrough in collapsible section |
+| `sequence_diagrams` | boolean | `true` | Generate sequence diagrams |
+| `poem` | boolean | `true` | Generate a poem about the changes |
+| `changed_files_summary` | boolean | `true` | Include changed files summary |
+| `estimate_code_review_effort` | boolean | `true` | Estimate review effort (1–5) |
+| `assess_linked_issues` | boolean | `true` | Evaluate how PR addresses linked issues |
+| `related_issues` | boolean | `true` | Surface related open issues |
+| `related_prs` | boolean | `true` | Surface related open PRs |
+| `suggested_labels` | boolean | `true` | Suggest PR labels |
+| `labeling_instructions` | array | `[]` | Define allowed labels and when to suggest them |
+| `auto_apply_labels` | boolean | `false` | Automatically apply suggested labels |
+| `suggested_reviewers` | boolean | `true` | Suggest reviewers |
+| `auto_assign_reviewers` | boolean | `false` | Automatically assign suggested reviewers |
+| `path_filters` | string[] | `[]` | Glob patterns; prefix `!` to exclude. Evaluated in order. |
+
+---
+
+## reviews.auto_review
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | boolean | `true` | Enable automatic reviews |
+| `auto_incremental_review` | boolean | `true` | Re-review on new pushes |
+| `ignore_title_keywords` | string[] | `[]` | Skip if PR title contains these (e.g. `["WIP"]`) |
+| `labels` | string[] | `[]` | Only review if PR has one of these labels |
+| `base_branches` | string[] | `[]` | Only review PRs targeting these branches (regex) |
+| `ignore_usernames` | string[] | `[]` | Skip PRs from these authors |
+| `drafts` | boolean | `false` | Review draft PRs |
+
+---
+
+## reviews.path_instructions
+
+Array of per-path review instructions.
+
+```yaml
+reviews:
+  path_instructions:
+    - path: "src/api/**"
+      instructions: "..."
+```
+
+---
+
+## reviews.tools
+
+Each tool: `enabled: boolean`. See `tools-by-language.md` for all YAML keys.
+
+```yaml
+reviews:
+  tools:
+    eslint:
+      enabled: true
+```
+
+---
+
+## reviews.finishing_touches
+
+| Field | Description |
+|-------|-------------|
+| `docstrings.enabled` | Generate docstring suggestions |
+| `unit_tests.enabled` | Generate unit test suggestions |
+| `custom` | Up to 5 custom recipes (`name`, `description`, `instructions`) |
+
+---
+
+## reviews.pre_merge_checks
+
+| Field | Description |
+|-------|-------------|
+| `docstrings.enabled` | Validate docstring coverage |
+| `title.enabled` | Validate PR title format |
+| `description.enabled` | Validate PR description quality |
+| `issue_assessment.enabled` | Verify linked issues are addressed |
+| `custom_checks` | Up to 5 custom checks |
+
+---
+
+## chat
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `art` | boolean | `true` | Generate art in chat responses |
+| `auto_reply` | boolean | `true` | Reply without `@coderabbitai` mention |
+| `integrations.jira.usage` | `"auto"` \| `"disabled"` | — | Jira issue creation |
+| `integrations.linear.usage` | `"auto"` \| `"disabled"` | — | Linear issue creation |
+
+---
+
+## knowledge_base
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `code_guidelines.enabled` | boolean | Apply organizational coding standards |
+| `learnings.scope` | `"local"` \| `"global"` \| `"auto"` | Scope of saved learnings |
+| `issues.scope` | `"local"` \| `"global"` \| `"auto"` | Issues to include as context |
+| `pull_requests.scope` | `"local"` \| `"global"` \| `"auto"` | PRs to include as context |
+| `web_search.enabled` | boolean | Enable web search for context |
+| `jira.project_keys` | string[] | Jira project keys |
+| `linear.team_keys` | string[] | Linear team keys |
+
+---
+
+## code_generation
+
+```yaml
+code_generation:
+  docstrings:
+    language: "google"  # "google" | "numpy" | "sphinx"
+    path_instructions:
+      - path: "src/**"
+        instructions: "..."
+  unit_tests:
+    path_instructions:
+      - path: "src/**"
+        instructions: "..."
+```
+
+---
+
+## issue_enrichment
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `auto_enrich` | boolean | `true` | Automatically analyze new issues |
+| `planning` | boolean | — | Generate implementation plans |
+| `labeling.enabled` | boolean | — | Suggest issue labels |
+| `labeling.auto_apply` | boolean | — | Auto-apply suggested labels |

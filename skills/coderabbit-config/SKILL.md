@@ -1,0 +1,159 @@
+---
+name: coderabbit-config
+description: Generate or update a .coderabbit.yaml configuration file for CodeRabbit AI code review. Use when the user wants to set up CodeRabbit, configure .coderabbit.yaml, adjust review settings, configure ignored paths, set up path-specific review instructions, change review tone or language, or customize CodeRabbit behavior in any way. Triggers on phrases like "coderabbit setup", "configure coderabbit", "create .coderabbit.yaml", "update coderabbit config", or any mention of .coderabbit.yaml.
+---
+
+# CodeRabbit Config
+
+Generate or update `.coderabbit.yaml` following the CodeRabbit schema v2.
+Schema field reference: `references/schema.md`. Tool YAML keys: `references/tools-by-language.md`.
+
+## What to do first (before generating any YAML)
+
+**Execute the following steps in order. Do not write or show any YAML until all questions are answered.**
+
+### 1. Load existing config + analyze project structure
+
+Use Glob/Bash to check all of the following and record findings:
+
+- Does `.coderabbit.yaml` exist? (if yes, read it)
+- Is it a monorepo? (top-level dirs: `api/`, `backend/`, `frontend/`, `app/`, `web/`, `mobile/`, `ios/`, `android/`, `packages/`, `services/`, `apps/`)
+- Workspace markers: `pnpm-workspace.yaml`, `nx.json`, `lerna.json`, `turbo.json`
+- Per module/root, detect language: Go (`go.mod`), TypeScript (`package.json`+`tsconfig.json`), Rails (`Gemfile`+`app/` or `db/migrate/`), Python (`pyproject.toml`), Rust (`Cargo.toml`), PHP (`composer.json`)
+- DB paths: `db/migrate/`, `*/db/migrate/`, `prisma/migrations/`, `**/migrations/`, `**/*.sql`
+- API specs: `**/openapi.yaml`, `**/swagger.yaml`, `**/openapi.json`, `**/swagger.json`, `api-docs/`, `docs/api/`
+- Markdown: any `.md` files beyond `README.md`
+- Test dirs: `spec/`, `test/`, `tests/`, `__tests__/`, `**/*.test.*`, `**/*.spec.*`
+- Build/vendor/lock-file paths: `dist/`, `build/`, `node_modules/`, `vendor/`, `.venv/`, `.next/`, `target/`, `__pycache__/`, `coverage/`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `Cargo.lock`, `poetry.lock`, `Gemfile.lock`
+
+Present findings to the user before asking any questions.
+
+### 2. Call AskUserQuestion — baseline settings
+
+**Call AskUserQuestion now with 2 questions. Do not proceed until the user responds.**
+
+- Q1: Language for review comments
+  - Options: `ja (Japanese)`, `en-US (English)`, `zh-CN (Chinese)`, `ko (Korean)`
+- Q2: Review tone
+  - Options: `chill` (constructive, encouraging), `assertive` (strict, direct)
+
+### 3. Call AskUserQuestion — select areas for path_instructions
+
+**Immediately after receiving the response above, call AskUserQuestion again. Do not proceed until the user responds.**
+
+Show only areas actually detected in step 1 (multiSelect):
+- Each monorepo module (e.g., `api/ (Go)`, `frontend/ (TypeScript/React)`, `backend/ (Ruby/Rails)`)
+- DB migration paths (`db/migrate/`, `prisma/migrations/`, etc.)
+- SQL files (`**/*.sql`)
+- OpenAPI / Swagger spec files
+- Markdown / documentation files
+- Test directories (`spec/`, `__tests__/`, etc.)
+- Other detected patterns (e.g., `*.sh`)
+
+Ask: "Which areas should have specific review instructions? (Select none to skip)"
+
+### 4. Call AskUserQuestion — one area at a time
+
+**For each selected area, call AskUserQuestion separately. Do not batch multiple areas. Wait for each response before moving to the next.**
+
+**DB migrations (`db/migrate/`, `prisma/migrations/`, etc.)** — multiSelect:
+- Require rollback path (`down` method or equivalent)
+- Warn on operations against large-data tables (downtime risk)
+- Check for missing indexes (foreign keys, frequently queried columns)
+- Recommend online schema change tools (gh-ost / pt-osc)
+- Check for missing NOT NULL constraints or default values
+
+**SQL files (`**/*.sql`)** — multiSelect:
+- Performance (full scans, unused indexes)
+- SQL injection risk
+- Transaction boundary correctness
+- Naming convention consistency
+
+**API spec (openapi / swagger)** — ask 2 questions:
+
+Q1 (multiSelect):
+- Detect breaking changes (removed fields, type changes, renamed endpoints)
+- Response type and status code completeness
+- Missing auth/authorization documentation
+- Spec compliance
+
+Q2 (single select):
+- Auto-generated from code (focus review on code changes)
+- Hand-written (review the spec itself thoroughly)
+
+**Frontend module** — multiSelect:
+- Accessibility (WCAG 2.1 AA: alt attributes, aria labels, keyboard navigation)
+- Bundle size impact (large library imports)
+- XSS risks (`dangerouslySetInnerHTML`, etc.)
+- React hooks rules, unnecessary re-renders
+- SSR / hydration errors (Next.js, etc.)
+- Responsive design
+
+**Backend / API server module** — multiSelect:
+- Missing auth/authorization checks
+- Input validation completeness
+- Error response format consistency
+- N+1 queries / performance
+- Security (injection, SSRF, excessive permissions)
+- PII / secrets leaking into logs
+
+**Rails `app/models/`** — multiSelect:
+- Validation completeness
+- N+1-inducing associations
+- Callback side effects
+- Scope usage correctness
+
+**Rails `app/controllers/`** — multiSelect:
+- Missing auth/authorization `before_action`
+- Strong parameters configuration
+- Business logic leaking into controllers
+- Response format consistency
+
+**Markdown / documentation** — multiSelect:
+- Broken links
+- Heading hierarchy consistency
+- API documentation completeness (all endpoints/parameters documented)
+- Writing style and terminology consistency
+- Code sample accuracy
+
+**Tests** — multiSelect:
+- Meaningful assertions (not just checking shape)
+- Over-mocking (tests that don't actually test behavior)
+- Edge case and error path coverage
+- Test naming convention consistency
+- Test independence (no inter-test dependencies)
+
+**Mobile module** — multiSelect:
+- Platform guidelines (iOS HIG / Material Design)
+- Memory leaks, uncancelled async operations
+- Sensitive data local storage
+- Offline handling
+
+### 5. Confirm path_instructions content
+
+Generate the `path_instructions` text for each selected area based on the answers above.
+**Show the proposed instructions to the user and call AskUserQuestion to confirm before proceeding.**
+Apply any requested edits.
+
+### 6. Call AskUserQuestion — path_filters
+
+**Call AskUserQuestion now. Do not proceed until the user responds.**
+
+Present detected build/vendor/lock-file paths as a multiSelect.
+Ask: "Confirm paths to exclude from review. Add or remove as needed."
+
+---
+
+## YAML generation rules (after all questions are answered)
+
+1. **Output only fields the user explicitly requested or confirmed.** If not discussed, omit it.
+2. **Never write a field whose value equals the schema default.** Do not "confirm" defaults by writing them.
+3. **NEVER output `reviews.tools`** — all tools are on by default. Only include if the user explicitly asks to disable a specific tool.
+4. **NEVER output any `chat` field** unless the user asked to change it.
+5. **NEVER output boolean feature flags** (`poem`, `sequence_diagrams`, `high_level_summary`, etc.) unless the user explicitly asked to change the default.
+6. Include only the `path_instructions` confirmed in step 5.
+7. Include only the `path_filters` confirmed in step 6.
+
+Show the final YAML to the user before writing.
+- New file: write after showing.
+- Existing file: show a diff and ask for confirmation before overwriting.
