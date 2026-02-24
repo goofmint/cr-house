@@ -115,13 +115,32 @@ reviews:
 
 ## reviews.pre_merge_checks
 
-| Field | Description |
-|-------|-------------|
-| `docstrings.enabled` | Validate docstring coverage |
-| `title.enabled` | Validate PR title format |
-| `description.enabled` | Validate PR description quality |
-| `issue_assessment.enabled` | Verify linked issues are addressed |
-| `custom_checks` | Up to 5 custom checks |
+Each built-in check has an `enabled` boolean and an optional `mode` that controls how a failure is reported.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `docstrings.enabled` | boolean | Validate docstring coverage |
+| `docstrings.mode` | `"off"` \| `"warning"` \| `"error"` | Failure behavior for docstring check |
+| `title.enabled` | boolean | Validate PR title format |
+| `title.mode` | `"off"` \| `"warning"` \| `"error"` | Failure behavior for title check |
+| `description.enabled` | boolean | Validate PR description quality |
+| `description.mode` | `"off"` \| `"warning"` \| `"error"` | Failure behavior for description check |
+| `issue_assessment.enabled` | boolean | Verify linked issues are addressed |
+| `issue_assessment.mode` | `"off"` \| `"warning"` \| `"error"` | Failure behavior for issue assessment check |
+| `custom_checks` | array (max 5) | Custom merge checks (`name`, `instructions`, `mode`) |
+| `custom_checks[].mode` | `"off"` \| `"warning"` \| `"error"` | Failure behavior for custom check |
+
+```yaml
+reviews:
+  pre_merge_checks:
+    title:
+      enabled: true
+      mode: "error"
+    custom_checks:
+      - name: "No TODO comments"
+        instructions: "Fail if any TODO comments are found."
+        mode: "warning"
+```
 
 ---
 
@@ -147,6 +166,9 @@ reviews:
 | `web_search.enabled` | boolean | Enable web search for context |
 | `jira.project_keys` | string[] | Jira project keys |
 | `linear.team_keys` | string[] | Linear team keys |
+| `linked_repositories` | array (max 1) | External repositories to include as review context |
+| `linked_repositories[].repository` | string | Repository in `org/repo` format |
+| `linked_repositories[].instructions` | string (max 2,000 chars) | Instructions for how to use the linked repo as context |
 
 ---
 
@@ -175,3 +197,64 @@ code_generation:
 | `planning` | boolean | — | Generate implementation plans |
 | `labeling.enabled` | boolean | — | Suggest issue labels |
 | `labeling.auto_apply` | boolean | — | Auto-apply suggested labels |
+
+---
+
+## Validation Rules
+
+These rules derive from the schema's `additionalProperties: false` constraints and field-level restrictions. Always verify generated YAML against these before writing.
+
+### Structural Constraints
+
+- `additionalProperties: false` is enforced at every level — any key not defined in the schema causes validation failure.
+- Only keys documented in this file and `tools-by-language.md` are valid.
+
+### String Length Limits
+
+| Field | Limit |
+|-------|-------|
+| `tone_instructions` | max 250 characters |
+| `reviews.path_instructions[].instructions` | max 20,000 characters |
+| `reviews.labeling_instructions[].instructions` | max 3,000 characters |
+| `reviews.finishing_touches.custom[].name` | max 100 characters |
+| `reviews.finishing_touches.custom[].instructions` | max 10,000 characters |
+| `reviews.pre_merge_checks.custom_checks[].name` | 1–50 characters |
+| `reviews.pre_merge_checks.custom_checks[].instructions` | 1–10,000 characters |
+| `knowledge_base.linked_repositories[].instructions` | max 2,000 characters |
+
+### Array Size Limits
+
+| Field | Max Items |
+|-------|-----------|
+| `reviews.finishing_touches.custom` | 5 |
+| `reviews.pre_merge_checks.custom_checks` | 5 |
+| `knowledge_base.linked_repositories` | 1 |
+
+### Enum Constraints
+
+| Field | Valid Values |
+|-------|-------------|
+| `language` | ISO locale codes (e.g., `en-US`, `ja`, `zh-CN`, `ko`, `fr`, `de`) |
+| `reviews.profile` | `"chill"` \| `"assertive"` |
+| `reviews.pre_merge_checks.docstrings.mode`, `.title.mode`, `.description.mode`, `.issue_assessment.mode`, `.custom_checks[].mode` | `"off"` \| `"warning"` \| `"error"` |
+| `scope` fields (`learnings.scope`, `issues.scope`, `pull_requests.scope`) | `"local"` \| `"global"` \| `"auto"` |
+| `code_generation.docstrings.language` | `"google"` \| `"numpy"` \| `"sphinx"` |
+| `chat.integrations.jira.usage` | `"auto"` \| `"disabled"` |
+| `chat.integrations.linear.usage` | `"auto"` \| `"disabled"` |
+
+### Numeric Ranges
+
+| Field | Range |
+|-------|-------|
+| `code_generation.docstrings.threshold` | 0–100 |
+
+### Required Fields
+
+| Array | Required Fields per Item |
+|-------|--------------------------|
+| `reviews.path_instructions` | `path` and `instructions` |
+| `reviews.labeling_instructions` | `label` and `instructions` |
+| `reviews.finishing_touches.custom` | `name`, `description`, `instructions` |
+| `reviews.pre_merge_checks.custom_checks` | `name`, `instructions` |
+| `code_generation.docstrings.path_instructions` | `path` and `instructions` |
+| `code_generation.unit_tests.path_instructions` | `path` and `instructions` |
