@@ -37,7 +37,64 @@ Present findings to the user before asking any questions.
 - Q2: Review tone
   - Options: `chill` (constructive, encouraging), `assertive` (strict, direct)
 
-### 3. Call AskUserQuestion — select areas for path_instructions
+### 3. Call AskUserQuestion — review settings
+
+**Immediately after receiving the response above, call AskUserQuestion with a multiSelect question. Do not proceed until the user responds.**
+
+Present the following boolean settings grouped by category. **Only settings the user explicitly changes from their default will be written to YAML.**
+
+Ask: "Which review settings would you like to change from their defaults? (Select all that apply; unselected = keep default)"
+
+**Workflow settings:**
+- `request_changes_workflow` — Auto-approve PR when all comments are resolved (default: `false`)
+- `commit_status` — Set commit status to pending/success during review (default: `true`)
+- `fail_commit_status` — Set commit status to failure when review finds issues (default: `false`)
+
+**Summary & overview:**
+- `high_level_summary` — Generate high-level change summary (default: `true`)
+- `collapse_walkthrough` — Wrap walkthrough in a collapsible section (default: `true`)
+- `changed_files_summary` — Include changed files summary (default: `true`)
+
+**Analysis features:**
+- `sequence_diagrams` — Generate sequence diagrams (default: `true`)
+- `estimate_code_review_effort` — Estimate review effort on a 1–5 scale (default: `true`)
+- `assess_linked_issues` — Evaluate how the PR addresses linked issues (default: `true`)
+
+**Related information:**
+- `related_issues` — Surface related open issues (default: `true`)
+- `related_prs` — Surface related open PRs (default: `true`)
+
+**Suggestions:**
+- `suggested_labels` — Suggest PR labels (default: `true`)
+- `suggested_reviewers` — Suggest reviewers (default: `true`)
+
+**Status display:**
+- `review_status` — Post review status messages in the walkthrough (default: `true`)
+- `review_details` — Post review details: ignored files, extra context, etc. (default: `false`)
+
+**Other:**
+- `poem` — Generate a poem about the changes (default: `true`)
+- `enable_prompt_for_ai_agents` — Include prompt for AI agents in review comments (default: `true`)
+- `early_access` — Enable experimental features (default: `false`)
+- `inheritance` — Enable inheritance from parent configuration (default: `false`)
+
+#### 3a. high_level_summary follow-up
+
+If `high_level_summary` is enabled (i.e., the user did **not** select it to disable it — the default is `true`), immediately call AskUserQuestion with the following questions:
+
+- Q1: Custom instructions for high-level summary generation
+  - Ask: "Enter custom instructions for how the high-level summary should be generated (leave blank to use default)"
+  - Free-text; only write `high_level_summary_instructions` if the user provides a non-empty value
+- Q2: Placeholder token for summary insertion
+  - Ask: "Change the summary insertion placeholder? (default: `@coderabbitai summary`)"
+  - Options: `Keep default (@coderabbitai summary)`, `Change to a custom value`
+  - If "Change": ask for the new string; only write `high_level_summary_placeholder` if different from the default
+- Q3: Place summary in the walkthrough section instead of the PR description?
+  - Ask: "Place the high-level summary inside the walkthrough section? (default: `false`)"
+  - Options: `No — keep in PR description (default)`, `Yes — place in walkthrough section`
+  - Only write `high_level_summary_in_walkthrough: true` if "Yes" is selected
+
+### 4. Call AskUserQuestion — select areas for path_instructions
 
 **Immediately after receiving the response above, call AskUserQuestion again. Do not proceed until the user responds.**
 
@@ -52,7 +109,7 @@ Show only areas actually detected in step 1 (multiSelect):
 
 Ask: "Which areas should have specific review instructions? (Select none to skip)"
 
-### 4. Call AskUserQuestion — one area at a time
+### 5. Call AskUserQuestion — one area at a time
 
 **For each selected area, call AskUserQuestion separately. Do not batch multiple areas. Wait for each response before moving to the next.**
 
@@ -129,13 +186,13 @@ Q2 (single select):
 - Sensitive data local storage
 - Offline handling
 
-### 5. Confirm path_instructions content
+### 6. Confirm path_instructions content
 
 Generate the `path_instructions` text for each selected area based on the answers above.
 **Show the proposed instructions to the user and call AskUserQuestion to confirm before proceeding.**
 Apply any requested edits.
 
-### 6. Call AskUserQuestion — path_filters
+### 7. Call AskUserQuestion — path_filters
 
 **Call AskUserQuestion now. Do not proceed until the user responds.**
 
@@ -150,9 +207,13 @@ Ask: "Confirm paths to exclude from review. Add or remove as needed."
 2. **Never write a field whose value equals the schema default.** Do not "confirm" defaults by writing them.
 3. **NEVER output `reviews.tools`** — all tools are on by default. Only include if the user explicitly asks to disable a specific tool.
 4. **NEVER output any `chat` field** unless the user asked to change it.
-5. **NEVER output boolean feature flags** (`poem`, `sequence_diagrams`, `high_level_summary`, etc.) unless the user explicitly asked to change the default.
-6. Include only the `path_instructions` confirmed in step 5.
-7. Include only the `path_filters` confirmed in step 6.
+5. **Boolean review settings (step 3)**: only write a field if the user explicitly toggled it from its default. Fields left at their default MUST be omitted.
+6. **`high_level_summary` string fields**: only write `high_level_summary_instructions` if non-empty; only write `high_level_summary_placeholder` if different from the default `"@coderabbitai summary"`; only write `high_level_summary_in_walkthrough: true` if the user selected "Yes".
+7. **Top-level vs `reviews:` placement**:
+   - `early_access` and `inheritance` are top-level fields and MUST NOT be placed under `reviews:`.
+   - All other review settings from step 3 belong under `reviews:`.
+8. Include only the `path_instructions` confirmed in step 6.
+9. Include only the `path_filters` confirmed in step 7.
 
 Show the final YAML to the user before writing.
 - New file: write after showing.
