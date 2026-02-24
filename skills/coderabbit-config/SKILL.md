@@ -41,9 +41,9 @@ Present findings to the user before asking any questions.
 
 **Immediately after receiving the response above, call AskUserQuestion with a multiSelect question. Do not proceed until the user responds.**
 
-Present the following boolean settings grouped by category. **Only settings the user explicitly changes from their default will be written to YAML.**
+Present the following boolean settings grouped by category. **Selecting an item toggles that setting away from its default — it does not mean "enable". For example, selecting `high_level_summary` (default: `true`) will disable it. Only settings toggled away from their default are written to YAML.**
 
-Ask: "Which review settings would you like to change from their defaults? (Select all that apply; unselected = keep default)"
+Ask: "Which review settings would you like to toggle from their defaults? (Select = flip from default; unselected = keep default)"
 
 **Workflow settings:**
 - `request_changes_workflow` — Auto-approve PR when all comments are resolved (default: `false`)
