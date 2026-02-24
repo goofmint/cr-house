@@ -175,3 +175,64 @@ code_generation:
 | `planning` | boolean | — | Generate implementation plans |
 | `labeling.enabled` | boolean | — | Suggest issue labels |
 | `labeling.auto_apply` | boolean | — | Auto-apply suggested labels |
+
+---
+
+## Validation Rules
+
+These rules derive from the schema's `additionalProperties: false` constraints and field-level restrictions. Always verify generated YAML against these before writing.
+
+### Structural Constraints
+
+- `additionalProperties: false` is enforced at every level — any key not defined in the schema causes validation failure.
+- Only keys documented in this file and `tools-by-language.md` are valid.
+
+### String Length Limits
+
+| Field | Limit |
+|-------|-------|
+| `tone_instructions` | max 250 characters |
+| `reviews.path_instructions[].instructions` | max 20,000 characters |
+| `reviews.labeling_instructions[].instructions` | max 3,000 characters |
+| `reviews.finishing_touches.custom[].name` | max 100 characters |
+| `reviews.finishing_touches.custom[].instructions` | max 10,000 characters |
+| `reviews.pre_merge_checks.custom_checks[].name` | 1–50 characters |
+| `reviews.pre_merge_checks.custom_checks[].instructions` | 1–10,000 characters |
+| `knowledge_base.linked_repositories[].instructions` | max 2,000 characters |
+
+### Array Size Limits
+
+| Field | Max Items |
+|-------|-----------|
+| `reviews.finishing_touches.custom` | 5 |
+| `reviews.pre_merge_checks.custom_checks` | 5 |
+| `knowledge_base.linked_repositories` | 1 |
+
+### Enum Constraints
+
+| Field | Valid Values |
+|-------|-------------|
+| `language` | ISO locale codes (e.g., `en-US`, `ja`, `zh-CN`, `ko`, `fr`, `de`) |
+| `reviews.profile` | `"chill"` \| `"assertive"` |
+| `mode` fields | `"off"` \| `"warning"` \| `"error"` |
+| `scope` fields (`learnings.scope`, `issues.scope`, `pull_requests.scope`) | `"local"` \| `"global"` \| `"auto"` |
+| `code_generation.docstrings.language` | `"google"` \| `"numpy"` \| `"sphinx"` |
+| `chat.integrations.jira.usage` | `"auto"` \| `"disabled"` |
+| `chat.integrations.linear.usage` | `"auto"` \| `"disabled"` |
+
+### Numeric Ranges
+
+| Field | Range |
+|-------|-------|
+| `code_generation.docstrings.threshold` | 0–100 |
+
+### Required Fields
+
+| Array | Required Fields per Item |
+|-------|--------------------------|
+| `reviews.path_instructions` | `path` and `instructions` |
+| `reviews.labeling_instructions` | `label` and `instructions` |
+| `reviews.finishing_touches.custom` | `name`, `description`, `instructions` |
+| `reviews.pre_merge_checks.custom_checks` | `name`, `instructions` |
+| `code_generation.docstrings.path_instructions` | `path` and `instructions` |
+| `code_generation.unit_tests.path_instructions` | `path` and `instructions` |

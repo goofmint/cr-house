@@ -199,6 +199,25 @@ Apply any requested edits.
 Present detected build/vendor/lock-file paths as a multiSelect.
 Ask: "Confirm paths to exclude from review. Add or remove as needed."
 
+### 8. Validate YAML against schema
+
+Before showing or writing the final YAML, run through this checklist mentally:
+
+1. **No unknown keys** — every field name exists in `references/schema.md` or `references/tools-by-language.md` (schema enforces `additionalProperties: false`)
+2. **String length constraints** — `tone_instructions` ≤ 250 chars; `path_instructions[].instructions` ≤ 20,000 chars; `labeling_instructions[].instructions` ≤ 3,000 chars; see `references/schema.md#validation-rules` for the full list
+3. **Array size limits** — `finishing_touches.custom` ≤ 5 items; `pre_merge_checks.custom_checks` ≤ 5 items; `linked_repositories` ≤ 1 item
+4. **Valid enum values** — `language` is a valid ISO locale; `profile` is `chill` or `assertive`; `mode` fields use `off`/`warning`/`error`; `scope` fields use `local`/`global`/`auto`
+5. **Required fields present** — each `path_instructions` entry has both `path` and `instructions`; each `labeling_instructions` entry has both `label` and `instructions`
+6. **Numeric ranges** — `docstrings.threshold` is between 0 and 100
+
+**If any check fails:**
+- List all validation errors with the specific field path and the violated constraint (e.g., "`tone_instructions` exceeds 250-character limit")
+- Call AskUserQuestion: "Validation found issues with the generated YAML. Would you like to fix them now or continue anyway?"
+  - Options: `Fix now (recommended)`, `Continue without fixing`
+- If the user selects "Fix now": present the corrected version of each affected field/section and regenerate
+
+**If all checks pass:** proceed to show the final YAML to the user as described in the YAML generation rules below.
+
 ---
 
 ## YAML generation rules (after all questions are answered)
@@ -214,6 +233,11 @@ Ask: "Confirm paths to exclude from review. Add or remove as needed."
    - All other review settings from step 3 belong under `reviews:`.
 8. Include only the `path_instructions` confirmed in step 6.
 9. Include only the `path_filters` confirmed in step 7.
+10. **Schema compliance (pre-generation)**:
+    - For `reviews.tools`, use only keys listed in `references/tools-by-language.md` — no other tool names are valid.
+    - If the user's `tone_instructions` input exceeds 250 characters, warn immediately and ask them to shorten it before proceeding.
+    - If adding a custom array item (`finishing_touches.custom`, `pre_merge_checks.custom_checks`, or `knowledge_base.linked_repositories`) would exceed its array size limit, reject the addition and inform the user of the limit.
+    - Official schema reference: https://www.coderabbit.ai/integrations/schema.v2.json
 
 Show the final YAML to the user before writing.
 - New file: write after showing.
