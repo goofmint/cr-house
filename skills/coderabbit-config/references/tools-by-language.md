@@ -78,7 +78,7 @@ YAML keys are exact and case-sensitive (note the hyphenated keys `golangci-lint`
 ### Web / Styles / Templates
 | Tool | YAML key | Config file |
 |------|----------|-------------|
-| Stylelint | `stylelint` | **Needs config to lint:** `.stylelintrc*`, `stylelint.config.*` |
+| Stylelint | `stylelint` | `.stylelintrc*`, `stylelint.config.*` — without one, CodeRabbit auto-generates a default `.stylelintrc.json` (extends `stylelint-config-standard-scss`) |
 | HTMLHint | `htmlhint` | `.htmlhintrc` |
 | Shopify Theme Check | `shopifyThemeCheck` | `.theme-check.yml` |
 | smarty-lint | `smartyLint` | — |
@@ -89,7 +89,7 @@ YAML keys are exact and case-sensitive (note the hyphenated keys `golangci-lint`
 | markdownlint | `markdownlint` | `.markdownlint.json` / `.yaml`, `.markdownlint-cli2.*` |
 | LanguageTool | `languagetool` | — (options: `enabled_rules`, `disabled_rules`, `enabled_categories`, `disabled_categories`, `enabled_only`, `level`) |
 | YAMLlint | `yamllint` | `.yamllint`, `.yamllint.yaml` |
-| SQLFluff | `sqlfluff` | `.sqlfluff` (path settable via `config_file`) |
+| SQLFluff | `sqlfluff` | `.sqlfluff`, `setup.cfg`, `tox.ini`, `pep8.ini`, `pyproject.toml` (path settable via `config_file`) — without one, CodeRabbit writes a temporary config from the review profile and detected SQL dialect; a committed `.sqlfluff` pins the dialect and rules |
 | Buf (Protobuf) | `buf` | `buf.yaml` |
 | Regal (Rego) | `regal` | `.regal.yaml` |
 | Prisma Schema linting | `prismaLint` | — |
@@ -107,7 +107,7 @@ YAML keys are exact and case-sensitive (note the hyphenated keys `golangci-lint`
 ### Security / SAST
 | Tool | YAML key | Config file |
 |------|----------|-------------|
-| Semgrep | `semgrep` | Semgrep rules YAML (`semgrep.yml`); path settable via `config_file` |
+| Semgrep | `semgrep` | **Required — Semgrep only runs if a config exists:** `semgrep.yml` / `.yaml`, `semgrep.config.yml` / `.yaml` in repo root; path settable via `config_file` |
 | OpenGrep | `opengrep` | — |
 | Trivy (IaC security) | `trivy` | `trivy.yaml` |
 | Checkov (IaC) | `checkov` | `.checkov.yaml` |
@@ -128,6 +128,10 @@ YAML keys are exact and case-sensitive (note the hyphenated keys `golangci-lint`
 
 Tools fall into three groups:
 
-1. **Config required to run meaningfully** — PHPStan (`phpstan.neon` with `paths:`), Stylelint (`.stylelintrc*`), ast-grep (`sgconfig.yml` + rules), Semgrep (rules file for custom rules). If the project uses the language but the config file is missing, offer to create a minimal default config file.
-2. **Config optional, honored when present** — ESLint, Biome, Ruff, RuboCop, golangci-lint, detekt, SwiftLint, SQLFluff, markdownlint, YAMLlint, TFLint, Checkov, Hadolint, etc. If a config file exists, the tool automatically uses it — confirm with the user that the tool should stay enabled with that config, and whether to pin a non-standard path via `config_file` (only for tools that support the `config_file` option: `swiftlint`, `golangci-lint`, `detekt`, `pmd`, `semgrep`, `sqlfluff`).
+1. **Config required to run** — the tool does not run at all without a config file:
+   - **Semgrep** — runs only if `semgrep.yml` / `semgrep.config.yml` (or `config_file`) exists.
+   - **PHPStan** — requires `phpstan.neon` / `phpstan.neon.dist` with `paths:` in the repo root.
+   If the project matches the tool's file types but the config file is missing, offer to create a minimal default config file (or leave the tool dormant).
+2. **Config optional, honored when present** — ESLint, Biome, Ruff, RuboCop, golangci-lint, detekt, SwiftLint, SQLFluff, Stylelint, markdownlint, YAMLlint, TFLint, Checkov, Hadolint, etc. If a config file exists, the tool automatically uses it — confirm with the user that the tool should stay enabled with that config, and whether to pin a non-standard path via `config_file` (only for tools that support the `config_file` option: `swiftlint`, `golangci-lint`, `detekt`, `pmd`, `semgrep`, `sqlfluff`).
+   Within this group, some tools fall back to an auto-generated config, so a committed config is **recommended for deterministic results**: SQLFluff (temporary config from profile + detected dialect — commit `.sqlfluff` to pin the dialect), Stylelint (auto default `.stylelintrc.json`), ast-grep (essentials package runs via `essential_rules: true`; custom rules need `sgconfig.yml` + `rule_dirs`/`packages`). When the matching file types are detected but no config exists, offer to create one.
 3. **No config** — runs out of the box (e.g. Cppcheck, actionlint, oasdiff, OSV Scanner, TruffleHog).

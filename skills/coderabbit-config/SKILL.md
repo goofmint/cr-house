@@ -118,10 +118,17 @@ Run these sub-steps, each with its own AskUserQuestion call (skip a sub-step whe
 
 **4a. Detected tool config files.** For each linter/SAST config file found in step 1, the corresponding CodeRabbit tool picks it up automatically. Call AskUserQuestion (multiSelect) listing each detected config (e.g. `.eslintrc.json → eslint`, `.rubocop.yml → rubocop`): "These linter/SAST configs were detected and will be used by CodeRabbit automatically. Select any tool you want to **disable** instead." Selected tools get `reviews.tools.<key>.enabled: false`; unselected tools stay enabled with their config (write nothing). If a detected config lives at a non-standard path and the tool supports the `config_file` option (`swiftlint`, `golangci-lint`, `detekt`, `pmd`, `semgrep`, `sqlfluff`), offer to pin it via `config_file`.
 
-**4b. Missing required configs.** For each detected language whose tool **requires a config file to run meaningfully** (group 1 in `references/tools-by-language.md`: PHPStan → `phpstan.neon` with `paths:`, Stylelint → `.stylelintrc*`, ast-grep → `sgconfig.yml` + rules, Semgrep custom rules → rules YAML) where no config file was found, call AskUserQuestion per tool:
-- Options: `Create a default config file (recommended)`, `Disable the tool in .coderabbit.yaml`, `Skip — leave as is`
+**4b. Missing configs — required tools.** For each tool that **does not run at all without a config file** (group 1 in `references/tools-by-language.md`) whose file types were detected in step 1 but whose config is missing, call AskUserQuestion per tool:
+- Semgrep (any code) → `semgrep.yml`; PHPStan (PHP detected) → `phpstan.neon` with `paths:`
+- Explain that the tool will stay dormant without a config. Options: `Create a default config file (recommended)`, `Disable the tool in .coderabbit.yaml`, `Skip — leave dormant`
 - If "Create": generate a minimal, working default config for that tool (e.g. a `phpstan.neon` with `level` and `paths:` covering the detected source dirs), show it to the user, and write it alongside `.coderabbit.yaml` after confirmation.
 - If "Disable": write `reviews.tools.<key>.enabled: false`.
+
+**4b-2. Missing configs — recommended tools.** For tools that run on an **auto-generated fallback config** when none is committed (see group 2 notes in `references/tools-by-language.md`), when their file types were detected in step 1 but no config exists, call AskUserQuestion per tool:
+- SQL files (`**/*.sql`) → SQLFluff: CodeRabbit auto-generates a temporary config from the review profile and detected dialect. Ask: "SQL files were detected. Create a `.sqlfluff` config to pin the dialect and rules? (Without it, SQLFluff still runs with an auto-generated config)" Options: `Create .sqlfluff (recommended — pins dialect)`, `Keep auto-generated config`, `Disable sqlfluff`
+- CSS/SCSS files → Stylelint: same pattern (auto default extends `stylelint-config-standard-scss`; a committed `.stylelintrc*` makes rules explicit).
+- If "Create": ask for the SQL dialect (e.g. `mysql`, `postgres`, `bigquery`) or infer it from migration tooling, generate the minimal config, show it, and write after confirmation.
+- If "Disable": write `reviews.tools.<key>.enabled: false`. Otherwise write nothing.
 
 **4c. Default-off tools.** Check `references/tools-by-language.md` for tools that are disabled by default in the current schema. As of the current schema **all tools default to enabled**, so this sub-step is usually a no-op — but if the reference lists any default-off tool relevant to the project, call AskUserQuestion asking whether to enable it, and write `reviews.tools.<key>.enabled: true` only if the user opts in.
 
