@@ -151,7 +151,7 @@ reviews:
 
 ## reviews.pre_merge_checks
 
-Automated validations before merge. Built-in checks are controlled by `mode` only (there is **no `enabled` field**). **Plan requirements:** built-in checks require Pro or above; `custom_checks` require Pro+ or above.
+Automated validations before merge. Built-in checks are controlled by `mode` only (there is **no `enabled` field**). **Plan requirement:** Pro+ or above — the setup flow (SKILL.md step 10) only configures `pre_merge_checks` (built-in checks and `custom_checks`) for Pro+ or above.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
