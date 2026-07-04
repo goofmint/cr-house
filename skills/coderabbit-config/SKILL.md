@@ -25,7 +25,7 @@ Use Glob/Bash to check all of the following and record findings:
 - Markdown: any `.md` files beyond `README.md`
 - Test dirs: `spec/`, `test/`, `tests/`, `__tests__/`, `**/*.test.*`, `**/*.spec.*`
 - Build/vendor/lock-file paths: `dist/`, `build/`, `node_modules/`, `vendor/`, `.venv/`, `.next/`, `target/`, `__pycache__/`, `coverage/`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `Cargo.lock`, `poetry.lock`, `Gemfile.lock`
-- **Linter/SAST config files** for the tools relevant to the detected languages (see the "Config file" columns in `references/tools-by-language.md`): e.g. `eslint.config.*`/`.eslintrc*`, `biome.json`, `ruff.toml`/`pyproject.toml`, `.rubocop.yml`, `phpstan.neon*`, `.golangci.*`, `detekt.yml`, `.swiftlint.yml`, `.stylelintrc*`, `.sqlfluff`, `.markdownlint*`, `.yamllint*`, `.tflint.hcl`, `.checkov.yaml`, `.hadolint.yaml`, `semgrep.yml`, `sgconfig.yml`, `.gitleaks.toml`
+- **Linter/SAST config files** for the tools relevant to the detected languages (see the "Config file" columns and the group 1 table in `references/tools-by-language.md`): e.g. `eslint.config.*`/`.eslintrc*`, `biome.json`, `.oxlintrc*`, `ruff.toml`/`pyproject.toml`, `.flake8`, `.pylintrc*`/`pylintrc*`, `.rubocop.yml`, `phpstan.neon*`, `phpcs.xml*`, `.golangci.*`, `clippy.toml`/`.clippy.toml`, `detekt.yml`, `.swiftlint.yml`, `.stylelintrc*`, `.sqlfluff`, `.prismalintrc*`/`prismalint.config.js`, `.markdownlint*`, `.yamllint*`, `.tflint.hcl`, `.checkov.yaml`, `.hadolint.yaml`, `semgrep.yml`/`semgrep.config.yml`, `opengrep.yml`, `smartylint.json`, `.theme-check.yml`, `.circleci/config.yml`, `.gitleaks.toml`
 
 Present findings to the user before asking any questions.
 
@@ -118,17 +118,17 @@ Run these sub-steps, each with its own AskUserQuestion call (skip a sub-step whe
 
 **4a. Detected tool config files.** For each linter/SAST config file found in step 1, the corresponding CodeRabbit tool picks it up automatically. Call AskUserQuestion (multiSelect) listing each detected config (e.g. `.eslintrc.json → eslint`, `.rubocop.yml → rubocop`): "These linter/SAST configs were detected and will be used by CodeRabbit automatically. Select any tool you want to **disable** instead." Selected tools get `reviews.tools.<key>.enabled: false`; unselected tools stay enabled with their config (write nothing). If a detected config lives at a non-standard path and the tool supports the `config_file` option (`swiftlint`, `golangci-lint`, `detekt`, `pmd`, `semgrep`, `sqlfluff`), offer to pin it via `config_file`.
 
-**4b. Missing configs — required tools.** For each tool that **does not run at all without a config file** (group 1 in `references/tools-by-language.md`) whose file types were detected in step 1 but whose config is missing, call AskUserQuestion per tool:
-- Semgrep (any code) → `semgrep.yml`; PHPStan (PHP detected) → `phpstan.neon` with `paths:`
-- Explain that the tool will stay dormant without a config. Options: `Create a default config file (recommended)`, `Disable the tool in .coderabbit.yaml`, `Skip — leave dormant`
-- If "Create": generate a minimal, working default config for that tool (e.g. a `phpstan.neon` with `level` and `paths:` covering the detected source dirs), show it to the user, and write it alongside `.coderabbit.yaml` after confirmation.
+**4b. Missing configs — config-required tools.** Go through the **group 1 table in `references/tools-by-language.md`** (ast-grep, CircleCI, Clippy, Dotenv Linter, Flake8, OpenGrep, Oxlint, PHPCS, PHPStan, PMD, Prisma Lint, Pylint, Semgrep, Shopify CLI, smarty-lint, SQLFluff). For each tool whose **trigger file types were detected in step 1** but whose config file is missing, call AskUserQuestion per tool. Examples:
+- SQL files detected, no `.sqlfluff` → SQLFluff
+- Python detected, no `.flake8` / `.pylintrc` → Flake8 / Pylint
+- PHP detected, no `phpstan.neon` / `phpcs.xml` → PHPStan / PHPCS
+- `prisma/` detected, no `.prismalintrc*` → Prisma Lint
+- Explain the consequence: without a config the tool stays dormant (or, where the group 1 table notes an auto-generated fallback — e.g. SQLFluff, OpenGrep, PMD, smarty-lint — runs on CodeRabbit's fallback defaults instead of your rules).
+- Options: `Create a default config file (recommended)`, `Keep as is` (label it "keep auto-generated config" for fallback tools), `Disable the tool in .coderabbit.yaml`
+- If "Create": generate a minimal, working default config for that tool (e.g. a `phpstan.neon` with `level` and `paths:` covering the detected source dirs; for `.sqlfluff` ask the SQL dialect — `mysql`, `postgres`, `bigquery`, etc. — or infer it from migration tooling), show it to the user, and write it after confirmation.
 - If "Disable": write `reviews.tools.<key>.enabled: false`.
 
-**4b-2. Missing configs — recommended tools.** For tools that run on an **auto-generated fallback config** when none is committed (see group 2 notes in `references/tools-by-language.md`), when their file types were detected in step 1 but no config exists, call AskUserQuestion per tool:
-- SQL files (`**/*.sql`) → SQLFluff: CodeRabbit auto-generates a temporary config from the review profile and detected dialect. Ask: "SQL files were detected. Create a `.sqlfluff` config to pin the dialect and rules? (Without it, SQLFluff still runs with an auto-generated config)" Options: `Create .sqlfluff (recommended — pins dialect)`, `Keep auto-generated config`, `Disable sqlfluff`
-- CSS/SCSS files → Stylelint: same pattern (auto default extends `stylelint-config-standard-scss`; a committed `.stylelintrc*` makes rules explicit).
-- If "Create": ask for the SQL dialect (e.g. `mysql`, `postgres`, `bigquery`) or infer it from migration tooling, generate the minimal config, show it, and write after confirmation.
-- If "Disable": write `reviews.tools.<key>.enabled: false`. Otherwise write nothing.
+**4b-2. Missing configs — recommended tools.** For group 2 tools with an auto-generated fallback noted in `references/tools-by-language.md` (currently Stylelint), when their file types were detected (CSS/SCSS) but no config exists, ask whether to commit an explicit config (`.stylelintrc*`) for deterministic rules, keep the auto-generated default, or disable the tool. Same Create/Keep/Disable handling as 4b.
 
 **4c. Default-off tools.** Check `references/tools-by-language.md` for tools that are disabled by default in the current schema. As of the current schema **all tools default to enabled**, so this sub-step is usually a no-op — but if the reference lists any default-off tool relevant to the project, call AskUserQuestion asking whether to enable it, and write `reviews.tools.<key>.enabled: true` only if the user opts in.
 
