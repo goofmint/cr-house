@@ -32,7 +32,7 @@ YAML keys are exact and case-sensitive (note the hyphenated keys `golangci-lint`
 ### Rust
 | Tool | YAML key | Config file (used if present) |
 |------|----------|-------------------------------|
-| Clippy | `clippy` | `clippy.toml`, `.clippy.toml` (official tools list marks a config as required; a `Cargo.toml` must exist) |
+| Clippy | `clippy` | `clippy.toml`, `.clippy.toml` — without one, Clippy runs with default settings (a `Cargo.toml` must exist); official tools list marks a config as required |
 
 ### Ruby / Rails
 | Tool | YAML key | Config file (used if present) |
